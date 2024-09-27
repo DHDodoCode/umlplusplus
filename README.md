@@ -21,11 +21,11 @@ UML++ is a C++ & Javascript editor and generator of UML class diagrams.
 
 1. Clone this repository locally.
 ```
-git clone --recurse-submodules -j8 https://github.com/mucsci-students/2021fa-420-nullptr.git
+git clone --recurse-submodules -j8 https://github.com/DHDodo/umlplusplus.git
 ```
 2. Go to repository root directory.
 ```
-cd 2021fa-420-nullptr
+cd umlplusplus
 ```
 3. Create and then build the project using the following commands.
 ```
