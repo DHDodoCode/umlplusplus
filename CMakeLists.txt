@@ -9,9 +9,9 @@ project(project CXX)
 set(CMAKE_CXX_FLAGS --coverage)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
-set(INJA_USE_EMBEDDED_JSON On CACHE Bool "" FORCE) # Allows use of json and inja as submodule
-set(BUILD_BENCHMARK Off CACHE Bool "" FORCE)
-set(BUILD_TESTING Off CACHE Bool "" FORCE)
+set(INJA_USE_EMBEDDED_JSON ON CACHE Bool "" FORCE) # Allows use of json and inja as submodule
+set(BUILD_BENCHMARK OFF CACHE Bool "" FORCE)
+set(BUILD_TESTING OFF CACHE Bool "" FORCE)
 add_subdirectory(external/inja)
 add_subdirectory(external/cpp-httplib)
 add_subdirectory(external/cli)

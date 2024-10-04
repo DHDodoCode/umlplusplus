@@ -1,4 +1,4 @@
-# UML++ ![workflow](https://github.com/mucsci-students/2021fa-420-nullptr/actions/workflows/cmake.yml/badge.svg) [![codecov](https://codecov.io/gh/mucsci-students/2021fa-420-nullptr/branch/develop/graph/badge.svg?token=gjrjXBxxEO)](https://codecov.io/gh/mucsci-students/2021fa-420-nullptr)
+# UML++ ![workflow](https://github.com/DHDodoCode/umlplusplus/actions/workflows/cmake.yml/badge.svg) [![codecov](https://codecov.io/gh/DHDodoCode/umlplusplus/graph/badge.svg?token=O1OVBC8L21)](https://codecov.io/gh/DHDodoCode/umlplusplus)
 
 UML++ is a C++ & Javascript editor and generator of UML class diagrams.
 
@@ -21,7 +21,7 @@ UML++ is a C++ & Javascript editor and generator of UML class diagrams.
 
 1. Clone this repository locally.
 ```
-git clone --recurse-submodules -j8 https://github.com/DHDodo/umlplusplus.git
+git clone --recurse-submodules -j8 https://github.com/DHDodoCode/umlplusplus.git
 ```
 2. Go to repository root directory.
 ```
