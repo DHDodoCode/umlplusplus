@@ -3,8 +3,8 @@
 
 FROM alpine:latest
 
-ARG VIEW=CLI
-ENV VIEW ${VAR}
+ARG VIEW="CLI"
+ENV VIEW=${VIEW}
 
 WORKDIR /workspaces/umlplusplus
 
@@ -13,9 +13,12 @@ RUN apk update && \
     apk add --no-cache \
     bash \
     build-base \
-    cmake 
+    cmake \
+    git
+
+# Copy all repo files
+COPY . /workspaces/umlplusplus
 
 # Run bash script that runs based on argument given
 COPY umlplusplus.sh .
-RUN umlplusplus.sh ${VIEW}
-
+RUN chmod +x umlplusplus.sh && ./umlplusplus.sh ${VIEW}
