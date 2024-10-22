@@ -1,10 +1,7 @@
-# Docker file that runs UML++
+# Docker file that runs UML++'s CLI
 # Run CLI or GUI based on the parameters given
 
 FROM alpine:latest
-
-ARG VIEW="CLI"
-ENV VIEW=${VIEW}
 
 WORKDIR /workspaces/umlplusplus
 
@@ -13,8 +10,7 @@ RUN apk update && \
     apk add --no-cache \
     bash \
     build-base \
-    cmake \
-    git
+    cmake
 
 # Copy all repo files
 COPY . /workspaces/umlplusplus
@@ -22,3 +18,5 @@ COPY . /workspaces/umlplusplus
 # Run bash script that runs based on argument given
 COPY umlplusplus.sh .
 RUN chmod +x umlplusplus.sh && ./umlplusplus.sh ${VIEW}
+
+ENTRYPOINT ["build/project", "--cli"]
