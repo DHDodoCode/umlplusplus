@@ -1,22 +1,40 @@
-# Docker file that runs UML++'s CLI
-# Run CLI or GUI based on the parameters given
+# Filename: Dockerfile
+# Description: Builds a copy of UML++'s CLI to run as a Docker image.
 
-FROM alpine:latest
+# -----------------------------------------------
 
+# Stage 1: Use an Alpine image to build the code
+FROM alpine:latest AS builder
+
+# Set the working directory inside the container
 WORKDIR /workspaces/umlplusplus
 
-# Initial update runs
-RUN apk update && \
-    apk add --no-cache \
-    bash \
-    build-base \
-    cmake
-
-# Copy all repo files
+# Copy your C++ source files to the working directory
 COPY . /workspaces/umlplusplus
 
-# Run bash script that runs based on argument given
-COPY umlplusplus.sh .
-RUN chmod +x umlplusplus.sh && ./umlplusplus.sh ${VIEW}
+# Acquire CMake in order to build program
+RUN apk --no-cache add cmake clang clang-dev make gcc g++ libc-dev linux-headers
 
-ENTRYPOINT ["build/project", "--cli"]
+# Compile the C++ application
+RUN cmake -B build
+RUN cmake --build build --parallel
+
+# -----------------------------------------------
+
+# Stage 2: Use scratch as the base image
+FROM alpine:latest
+
+# Set working directory
+WORKDIR /app
+
+# Add shared libraries so code can use dynamic links
+RUN apk --no-cache add libgcc libstdc++
+
+# Copy the statically compiled binary from the builder stage
+COPY --from=builder /workspaces/umlplusplus/build/project /app
+
+# Expose 60555 for use in the GUI
+EXPOSE 60555
+
+# Run application once image is accessed
+ENTRYPOINT ["./project", "--cli"]
