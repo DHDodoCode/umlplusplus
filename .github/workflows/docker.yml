@@ -71,13 +71,15 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
       
-      # Generates semver tag based on the gitflow model, for use in versioning images.
+      # Generates semantic version tag.
       - name: Generate semver tag
-        id: semver-tag
-        uses: gandarez/semver-action@master
-        with:
-          branching_model: "git-flow"
-    
+        id: taggerDryRun
+        uses: anothrNick/github-tag-action@1.36.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DRY_RUN: true
+
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
       # Note: Repository name inside of tags is hardcoded due to limitations with tag capitalization.
       - name: Build docker image
@@ -87,7 +89,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/dhdodocode/umlplusplus:latest
-            ghcr.io/dhdodocode/umlplusplus:${{ steps.semver-tag.outputs.semver_tag }}
+            ghcr.io/dhdodocode/umlplusplus:${{ steps.taggerDryRun.outputs.new_tag }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
