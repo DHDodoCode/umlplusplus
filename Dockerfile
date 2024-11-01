@@ -39,6 +39,9 @@ RUN apk --no-cache add libgcc libstdc++
 # Copy the statically compiled binary from the builder stage
 COPY --from=builder /workspaces/umlplusplus/build/project /app
 
+# Copy the tests so that they can be ran in the workflow
+COPY --from=builder /workspaces/umlplusplus/build/Tests /app
+
 # Copy code coverage to upload to codecov
 COPY --from=builder /workspaces/umlplusplus/UMLClass.cpp.gcov \
                     /workspaces/umlplusplus/UMLRelationship.cpp.gcov \

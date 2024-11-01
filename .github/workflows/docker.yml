@@ -41,11 +41,40 @@ jobs:
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      
+      - name: Make test image to run tests and acquire code coverage
+        uses: docker/build-push-action@v6
+        with:
+          load: true
+          tags: umlplusplus:test
 
+      - name: Run tests within test container
+        run: |
+          docker run --rm umlplusplus:test ./Tests  
+      
+        # This step copies the code coverage files that are in the image to the virtual repo so that they can be uploaded to codecov.
+      - name: Copy code coverage files from image to virtual repo
+        uses: shrink/actions-docker-extract@v3
+        with:
+          image: umlplusplus:test
+          path: /gcov/.
+          destination: .
+
+        # Attempts to push code coverage to Codecov page.
+        # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
+      - name: Upload code coverage to codecov
+        uses: codecov/codecov-action@v4
+        with:
+          # List all important model files tested with gcov. Do not add spaces between commas.
+          files: ./UMLClass.cpp.gcov,./UMLRelationship.cpp.gcov,./UMLAttribute.cpp.gcov,./UMLField.cpp.gcov,./UMLMethod.cpp.gcov,./UMLParameter.cpp.gcov,./UMLData.cpp.gcov,./UMLDataHistory.cpp.gcov,./UMLFile.cpp.gcov
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+    
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
       - name: Build docker image
         id: push
-        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
@@ -61,26 +90,6 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
-
-      # This step copies the code coverage files that are in the image to the virtual repo so that they can be uploaded to codecov.
-      - name: Copy code coverage files from image to virtual repo
-        uses: shrink/actions-docker-extract@v3
-        with:
-          image: umlplusplus:latest
-          path: /gcov/.
-          destination: .
-
-      # Attempts to push code coverage to Codecov page.
-      # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
-      - name: Upload code coverage to codecov
-        uses: codecov/codecov-action@v4
-        with:
-          # List all important model files tested with gcov. Do not add spaces between commas.
-          files: ./UMLClass.cpp.gcov,./UMLRelationship.cpp.gcov,./UMLAttribute.cpp.gcov,./UMLField.cpp.gcov,./UMLMethod.cpp.gcov,./UMLParameter.cpp.gcov,./UMLData.cpp.gcov,./UMLDataHistory.cpp.gcov,./UMLFile.cpp.gcov
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          verbose: true
-    
       
   
       
