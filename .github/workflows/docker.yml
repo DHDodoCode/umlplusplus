@@ -52,7 +52,7 @@ jobs:
         run: |
           docker run --rm umlplusplus:test ./Tests  
       
-        # This step copies the code coverage files that are in the image to the virtual repo so that they can be uploaded to codecov.
+      # This step copies the code coverage files that are in the image to the virtual repo so that they can be uploaded to codecov.
       - name: Copy code coverage files from image to virtual repo
         uses: shrink/actions-docker-extract@v3
         with:
@@ -60,8 +60,8 @@ jobs:
           path: /app/gcov/.
           destination: .
 
-        # Attempts to push code coverage to Codecov page.
-        # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
+      # Attempts to push code coverage to Codecov page.
+      # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
       - name: Upload code coverage to codecov
         uses: codecov/codecov-action@v4
         with:
@@ -70,6 +70,13 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
+      
+      # Generates semver tag based on the gitflow model, for use in versioning images.
+      - name: Generate semver tag
+        id: semver-tag
+        uses: gandarez/semver-action@master
+        with:
+          branching_model: "git-flow"
     
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
       # Note: Repository name inside of tags is hardcoded due to limitations with tag capitalization.
@@ -80,7 +87,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/dhdodocode/umlplusplus:latest
-            ghcr.io/dhdodocode/umlplusplus:${{ github.sha }}
+            ghcr.io/dhdodocode/umlplusplus:${{ steps.semver-tag.outputs.semver_tag }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
