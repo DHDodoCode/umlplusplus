@@ -1,10 +1,16 @@
 name: Create and publish a Docker image
 
-# Configures this workflow to run every time a change is pushed to the branch called `release`.
+# Configures this workflow to run every time a change is pushed to the branch called `develop`.
 on:
   push:
+    tags:
+      - 'v*'
+    branches:
+      - 'main'
+      - 'develop'
   pull_request:
     branches:
+      - 'main'
       - 'develop'
 
 # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
@@ -16,13 +22,14 @@ env:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+    
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
-      # 
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,12 +42,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
-      - name: Extract metadata (tags, labels) for Docker
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) for semantic versioning.
+      - name: Acquire semantic versioning with metadata-action
         id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ghcr.io/dhdodocode/umlplusplus
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       
       - name: Make test image to run tests and acquire code coverage
         uses: docker/build-push-action@v6
@@ -70,16 +83,7 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-      
-      # Generates semantic version tag.
-      - name: Generate semver tag
-        id: taggerDryRun
-        uses: anothrNick/github-tag-action@1.36.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WITH_V: true
-          DRY_RUN: true
-
+    
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
       # Note: Repository name inside of tags is hardcoded due to limitations with tag capitalization.
       - name: Build docker image
@@ -87,9 +91,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: |
-            ghcr.io/dhdodocode/umlplusplus:latest
-            ghcr.io/dhdodocode/umlplusplus:${{ steps.taggerDryRun.outputs.new_tag }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
