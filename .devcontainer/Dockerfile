@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     git \
     curl \
+    docker.io \
     && apt-get clean
 
 # Install without package manager Option 1:
