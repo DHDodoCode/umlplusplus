@@ -9,7 +9,7 @@ FROM alpine:latest AS builder
 # Set the working directory inside the container
 WORKDIR /workspaces/umlplusplus
 
-# Copy your C++ source files to the working directory
+# Copy C++ source files to the working directory
 COPY . /workspaces/umlplusplus
 
 # Acquire CMake in order to build program
