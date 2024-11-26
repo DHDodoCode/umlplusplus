@@ -1,0 +1,165 @@
+name: Docker CI/CD
+
+# Configures this workflow to run every time a change is pushed to the branch called `develop`.
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - 'main'
+      - 'develop'
+  pull_request:
+    branches:
+      - 'main'
+      - 'develop'
+
+# Defines two custom environment variables for the workflow. These are used for the Container registry domain, 
+# and a name for the Docker image that this workflow builds.
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+# This is a four job process that builds all binaries, runs GoogleTest tests,
+# acquires code coverage, and then creates a final image to be uploaded.
+jobs:
+  make-builder:
+    name: Make binaries with builder Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Make builder container with builder Dockerfile 
+        uses: docker/build-push-action@v6
+        with:
+          file: ${{ github.workspace }}/cicd/builder/Dockerfile
+          tags: buildImage
+          outputs: type=docker,dest=/tmp/buildimage.tar
+    
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildImage
+          path: /tmp/buildImage.tar
+  
+  run-tests:
+    name: Run GoogleTest mock tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact of builder
+        uses: actions/download-artifact@v4
+        with:
+          name: buildImage
+          path: /tmp
+      
+      - name: Load builder image
+        run: docker load --input /tmp/buildImage.tar
+      
+      # Runs tests within docker container. This tests the code and not the container,
+      # so it runs using the build image and not the final image.
+      - name: Run tests
+        run: docker run -i -t buildImage ctest -C Release --test-dir ./build
+      
+      # Acquires umllib files for code coverage in a later step. 
+      # This is due to how GoogleTest populates the files for code coverage 
+      # after running its test binary.
+      - name: Copy umllib to virtual workspace
+        uses: shrink/actions-docker-extract@v3
+        with:
+          image: buildImage:latest
+          path: /workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*
+          destination: /objectFiles
+      
+      - name: Upload object file directory as artifact 
+        uses: actions/upload-artifact@v4
+        with:
+          name: objectFiles
+          path: /objectFiles
+    
+  code-coverage:
+    name: Acquire code coverage with gcov
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact of object files
+        uses: actions/download-artifact@v4
+        with:
+          name: objectFiles
+          path: /objectFiles
+        
+        # Acquire code coverage from the object files using gcov. 
+        # This generates .gcov files that are uploaded to the repo's Codecov page. 
+      - name: Run code coverage 
+        run: gcov /objectFiles/*.o
+        
+        # Attempts to push code coverage to Codecov page.
+        # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
+      - name: Upload code coverage to codecov
+        uses: codecov/codecov-action@v4
+        with:
+          # List all important model files tested with gcov. Do not add spaces between commas.
+          files: >-
+                   /objectFiles/UMLClass.cpp.gcov,/objectFiles/UMLRelationship.cpp.gcov,/objectFiles/UMLAttribute.cpp.gcov,
+                   /objectFiles/UMLField.cpp.gcov,/objectFiles/UMLMethod.cpp.gcov,/objectFiles/UMLParameter.cpp.gcov,
+                   /objectFiles/UMLData.cpp.gcov,/objectFiles/UMLDataHistory.cpp.gcov,/objectFiles/UMLFile.cpp.gcov
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+    
+  build-push-application:
+    name: Build and push application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Uses the `docker/login-action` action to log in to the Container registry
+      # using the account and password that will publish the packages. 
+      # Once published, the packages are scoped to the account defined here.
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) for semantic versioning.
+      - name: Acquire semantic versioning with metadata-action
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/dhdodocode/umlplusplus
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+       
+      - name: Download artifact of builder
+        uses: actions/download-artifact@v4
+        with:
+          name: buildImage
+          path: /tmp
+      
+      - name: Load builder image
+        run: docker load --input /tmp/buildImage.tar
+      
+      # Builds final docker image to be uploaded to Github.
+      - name: Build and push docker image docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          file: ${{ github.workspace }}/cicd/application/Dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+    
