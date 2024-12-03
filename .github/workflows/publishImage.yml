@@ -63,16 +63,13 @@ jobs:
       # Runs tests within docker container. This tests the code and not the container,
       # so it runs using the build image and not the final image.
       - name: Run tests
-        run: docker run buildimage ctest -C Release --test-dir ./build
+        run: docker run buildimage ctest 
       
-      - name: Check containers with buildimage
-        run: docker ps -aqf ancestor=buildimage
-      
-      # Acquires umllib files for code coverage in a later step. 
+      # Acquires build files for code coverage in a later step. 
       # Uses the container made in the previous step to get the object
       # files that were modified the GoogleTest binary run.
       - name: Copy populated umllib to virtual workspace
-        run: docker cp $(docker ps -aqf ancestor=buildimage):/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/ /tmp/objectfiles
+        run: docker cp $(docker ps -aqf ancestor=buildimage):/workspaces/umlplusplus/build/ /tmp/buildfiles
       
       # Upload the populated umllib as an artifact. 
       # Docker runs do not update the image, they only create a container. 
@@ -81,8 +78,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: objectfiles
-          path: /tmp/objectfiles
+          name: buildfiles
+          path: /tmp/buildfiles
       
   code-coverage:
     name: Acquire code coverage with gcov
@@ -98,8 +95,8 @@ jobs:
       - name: Download artifact of object files
         uses: actions/download-artifact@v4
         with:
-          name: objectfiles
-          path: /tmp/objectfiles
+          name: buildfiles
+          path: /tmp/buildfiles
 
       - name: Load builder image
         run: docker load --input /tmp/buildimage.tar
@@ -107,7 +104,7 @@ jobs:
       # Acquire code coverage from the object files using gcov. 
       # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run:  docker run -v /tmp/objectfiles buildimage gcov /tmp/objectfiles/*.o
+        run:  docker run -v /tmp/buildfiles buildimage gcov /tmp/buildfiles/CMakeFiles/umllib.dir/umllib/*.o
 
       # Attempts to push code coverage to Codecov page.
       # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
