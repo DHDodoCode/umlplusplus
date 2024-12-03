@@ -65,14 +65,14 @@ jobs:
       - name: Run tests
         run: docker run buildimage ctest -C Release --test-dir ./build
       
-      - name: Check list of containers
-        run: docker ps -a
+      - name: Check containers with buildimage
+        run: docker ps -aqf ancestor=buildimage
       
       # Acquires umllib files for code coverage in a later step. 
       # Uses the container made in the previous step to get the object
       # files that were modified the GoogleTest binary run.
       - name: Copy populated umllib to virtual workspace
-        run: docker cp `docker ps | grep 'buildimage' | awk '{ print $1 }'`:/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/ /tmp/objectfiles
+        run: docker cp $(docker ps -aqf ancestor=buildimage):/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/ /tmp/objectfiles
       
       # Upload the populated umllib as an artifact. 
       # Docker runs do not update the image, they only create a container. 
