@@ -66,7 +66,7 @@ jobs:
       # object files. This is needed as a container will not retain info when stopped.
       - name: Run tests, commit container to new image
         run: | 
-          docker run buildimage sh -c "ctest --test-dir ./build && cat"
+          docker run buildimage sh -c "ctest --test-dir ./build && /workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.o && cat"
           docker commit $(docker ps -aqf ancestor=buildimage) testimage
           docker stop $(docker ps -aqf ancestor=buildimage)
       
@@ -74,7 +74,7 @@ jobs:
       # Uses the container made in the previous step to get the object
       # files that were modified the GoogleTest binary run.
       - name: Copy populated umllib to virtual workspace
-        run: docker cp $(docker create --name tc testimage):/workspaces /tmp/workspaces
+        run: docker cp $(docker create --name tc testimage):/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/ /tmp/objectfiles
       
       # Upload the populated umllib as an artifact. 
       # Docker runs do not update the image, they only create a container. 
@@ -84,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: objectfiles
-          path: /tmp/workspaces
+          path: /tmp/objectfiles
       
   code-coverage:
     name: Acquire code coverage with gcov
@@ -101,7 +101,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: objectfiles
-          path: /tmp/workspaces
+          path: /tmp/objectfiles
 
       - name: Load builder image
         run: docker load --input /tmp/buildimage.tar
@@ -109,7 +109,7 @@ jobs:
       # Acquire code coverage from the object files using gcov. 
       # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run:  docker run -v /tmp/workspaces buildimage gcov /tmp/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.o
+        run:  docker run -v /tmp/objectfiles buildimage gcov /tmp/objectfiles/*.o
 
       # Attempts to push code coverage to Codecov page.
       # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
