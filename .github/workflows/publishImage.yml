@@ -73,13 +73,13 @@ jobs:
         with:
           image: buildimage:latest
           path: workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/.
-          destination: objectfiles
+          destination: /tmp/objectfiles
       
       - name: Upload object file directory as artifact 
         uses: actions/upload-artifact@v4
         with:
           name: objectfiles
-          path: /objectfiles
+          path: /tmp/objectfiles
     
   code-coverage:
     name: Acquire code coverage with gcov
