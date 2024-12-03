@@ -74,7 +74,7 @@ jobs:
       # Uses the container made in the previous step to get the object
       # files that were modified the GoogleTest binary run.
       - name: Copy populated umllib to virtual workspace
-        run: docker cp $(docker create --name tc testimage):/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/ /tmp/objectfiles
+        run: docker cp $(docker create --name tc testimage):/workspaces /tmp/workspaces
       
       # Upload the populated umllib as an artifact. 
       # Docker runs do not update the image, they only create a container. 
@@ -84,7 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: objectfiles
-          path: /tmp/objectfiles
+          path: /tmp/workspaces
       
   code-coverage:
     name: Acquire code coverage with gcov
@@ -101,7 +101,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: objectfiles
-          path: /tmp/objectfiles
+          path: /tmp/workspaces
 
       - name: Load builder image
         run: docker load --input /tmp/buildimage.tar
@@ -109,7 +109,7 @@ jobs:
       # Acquire code coverage from the object files using gcov. 
       # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run:  docker run -v /tmp/objectfiles buildimage gcov /tmp/objectfiles/*.o
+        run:  docker run -v /tmp/workspaces buildimage gcov /tmp/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.o
 
       # Attempts to push code coverage to Codecov page.
       # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
