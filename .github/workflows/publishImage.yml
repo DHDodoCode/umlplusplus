@@ -34,14 +34,14 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           file: ${{ github.workspace }}/cicd/builder/Dockerfile
-          tags: buildImage
+          tags: buildimage
           outputs: type=docker,dest=/tmp/buildimage.tar
     
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: buildImage
-          path: /tmp/buildImage.tar
+          name: buildimage
+          path: /tmp/buildimage.tar
   
   run-tests:
     name: Run GoogleTest mock tests
@@ -50,16 +50,16 @@ jobs:
       - name: Download artifact of builder
         uses: actions/download-artifact@v4
         with:
-          name: buildImage
+          name: buildimage
           path: /tmp
       
       - name: Load builder image
-        run: docker load --input /tmp/buildImage.tar
+        run: docker load --input /tmp/buildimage.tar
       
       # Runs tests within docker container. This tests the code and not the container,
       # so it runs using the build image and not the final image.
       - name: Run tests
-        run: docker run -i -t buildImage ctest -C Release --test-dir ./build
+        run: docker run -i -t buildimage ctest -C Release --test-dir ./build
       
       # Acquires umllib files for code coverage in a later step. 
       # This is due to how GoogleTest populates the files for code coverage 
@@ -67,15 +67,15 @@ jobs:
       - name: Copy umllib to virtual workspace
         uses: shrink/actions-docker-extract@v3
         with:
-          image: buildImage:latest
+          image: buildimage:latest
           path: /workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*
-          destination: /objectFiles
+          destination: /objectfiles
       
       - name: Upload object file directory as artifact 
         uses: actions/upload-artifact@v4
         with:
-          name: objectFiles
-          path: /objectFiles
+          name: objectfiles
+          path: /objectfiles
     
   code-coverage:
     name: Acquire code coverage with gcov
@@ -84,13 +84,13 @@ jobs:
       - name: Download artifact of object files
         uses: actions/download-artifact@v4
         with:
-          name: objectFiles
-          path: /objectFiles
+          name: objectfiles
+          path: /objectfiles
         
         # Acquire code coverage from the object files using gcov. 
         # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run: gcov /objectFiles/*.o
+        run: gcov /objectfiles/*.o
         
         # Attempts to push code coverage to Codecov page.
         # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
@@ -99,9 +99,9 @@ jobs:
         with:
           # List all important model files tested with gcov. Do not add spaces between commas.
           files: >-
-                   /objectFiles/UMLClass.cpp.gcov,/objectFiles/UMLRelationship.cpp.gcov,/objectFiles/UMLAttribute.cpp.gcov,
-                   /objectFiles/UMLField.cpp.gcov,/objectFiles/UMLMethod.cpp.gcov,/objectFiles/UMLParameter.cpp.gcov,
-                   /objectFiles/UMLData.cpp.gcov,/objectFiles/UMLDataHistory.cpp.gcov,/objectFiles/UMLFile.cpp.gcov
+                   /objectfiles/UMLClass.cpp.gcov,/objectfiles/UMLRelationship.cpp.gcov,/objectfiles/UMLAttribute.cpp.gcov,
+                   /objectfiles/UMLField.cpp.gcov,/objectfiles/UMLMethod.cpp.gcov,/objectfiles/UMLParameter.cpp.gcov,
+                   /objectfiles/UMLData.cpp.gcov,/objectfiles/UMLDataHistory.cpp.gcov,/objectfiles/UMLFile.cpp.gcov
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
@@ -139,11 +139,11 @@ jobs:
       - name: Download artifact of builder
         uses: actions/download-artifact@v4
         with:
-          name: buildImage
+          name: buildimage
           path: /tmp
       
       - name: Load builder image
-        run: docker load --input /tmp/buildImage.tar
+        run: docker load --input /tmp/buildimage.tar
       
       # Builds final docker image to be uploaded to Github.
       - name: Build and push docker image docker image
