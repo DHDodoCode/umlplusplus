@@ -66,42 +66,46 @@ jobs:
         run: docker run buildimage ctest -C Release --test-dir ./build
       
       # Acquires umllib files for code coverage in a later step. 
-      # This is due to how GoogleTest populates the files for code coverage 
-      # after running its test binary.
-      - name: Copy umllib to virtual workspace
-        uses: shrink/actions-docker-extract@v3
-        with:
-          image: buildimage:latest
-          path: workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/.
-          destination: /tmp/objectfiles
+      # Uses the container made in the previous step to get the object
+      # files that were modified the GoogleTest binary run.
+      - name: Copy populated umllib to virtual workspace
+        run: docker cp `docker ps -aqf "name=buildimage"`:/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/ /tmp/objectfiles
       
-      - name: Upload object file directory as artifact 
+      # Upload the populated umllib as an artifact. 
+      # Docker runs do not update the image, they only create a container. 
+      # Thus, to get the populated object files for gcov, we need them 
+      # as an artifact to be mounted in the next job.
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: objectfiles
           path: /tmp/objectfiles
-    
+      
   code-coverage:
     name: Acquire code coverage with gcov
     runs-on: ubuntu-latest
     needs: [make-builder, run-tests]
     steps:
+      - name: Download artifact of builder
+        uses: actions/download-artifact@v4
+        with:
+          name: buildimage
+          path: /tmp
+      
       - name: Download artifact of object files
         uses: actions/download-artifact@v4
         with:
           name: objectfiles
           path: /tmp/objectfiles
+
+      - name: Load builder image
+        run: docker load --input /tmp/buildimage.tar
         
       # Acquire code coverage from the object files using gcov. 
       # This generates .gcov files that are uploaded to the repo's Codecov page. 
-      #- name: Run code coverage 
-      #  run: gcov /tmp/objectfiles/*.o
-
       - name: Run code coverage 
-        uses: threeal/gcovr-action@v1.1.0
-        with:
-          root: /tmp/objectfiles/*.o
-        
+        run:  docker run -v /tmp/objectfiles buildimage gcov /tmp/objectfiles/*.o
+
       # Attempts to push code coverage to Codecov page.
       # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
       - name: Upload code coverage to codecov
@@ -176,5 +180,3 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
-
-    
