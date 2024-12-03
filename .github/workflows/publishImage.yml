@@ -65,6 +65,9 @@ jobs:
       - name: Run tests
         run: docker run buildimage ctest -C Release --test-dir ./build
       
+      - name: Check list of containers
+        run: docker ps -aqf "name=buildimage"
+      
       # Acquires umllib files for code coverage in a later step. 
       # Uses the container made in the previous step to get the object
       # files that were modified the GoogleTest binary run.
