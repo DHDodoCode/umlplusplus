@@ -65,10 +65,6 @@ jobs:
       - name: Run tests
         run: docker run buildimage ctest -C Release --test-dir ./build
       
-      # TEMP VERSION CHECK
-      - name: Check gcc version
-        run: docker run buildimage gcc --version
-      
       # Acquires umllib files for code coverage in a later step. 
       # This is due to how GoogleTest populates the files for code coverage 
       # after running its test binary.
@@ -95,18 +91,19 @@ jobs:
         with:
           name: objectfiles
           path: /tmp/objectfiles
-      
-      # TEMP VERSION CHECK
-      - name: Check gcc version
-        run: gcc --version
         
-        # Acquire code coverage from the object files using gcov. 
-        # This generates .gcov files that are uploaded to the repo's Codecov page. 
+      # Acquire code coverage from the object files using gcov. 
+      # This generates .gcov files that are uploaded to the repo's Codecov page. 
+      #- name: Run code coverage 
+      #  run: gcov /tmp/objectfiles/*.o
+
       - name: Run code coverage 
-        run: gcov /tmp/objectfiles/*.o
+        uses: threeal/gcovr-action@v1.1.0
+        with:
+          root: /tmp/objectfiles/*.o
         
-        # Attempts to push code coverage to Codecov page.
-        # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
+      # Attempts to push code coverage to Codecov page.
+      # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
       - name: Upload code coverage to codecov
         uses: codecov/codecov-action@v4
         with:
