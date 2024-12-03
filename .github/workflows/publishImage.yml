@@ -36,7 +36,7 @@ jobs:
       - name: Make builder container with builder Dockerfile 
         uses: docker/build-push-action@v6
         with:
-          file: /cicd/builder/Dockerfile
+          file: ${{ github.workspace }}/cicd/builder/Dockerfile
           tags: buildimage
           outputs: type=docker,dest=/tmp/buildimage.tar
     
@@ -49,6 +49,7 @@ jobs:
   run-tests:
     name: Run GoogleTest mock tests
     runs-on: ubuntu-latest
+    needs: make-builder
     steps:
       - name: Download artifact of builder
         uses: actions/download-artifact@v4
@@ -83,6 +84,7 @@ jobs:
   code-coverage:
     name: Acquire code coverage with gcov
     runs-on: ubuntu-latest
+    needs: [make-builder, run-tests]
     steps:
       - name: Download artifact of object files
         uses: actions/download-artifact@v4
@@ -112,6 +114,7 @@ jobs:
   build-push-application:
     name: Build and push application
     runs-on: ubuntu-latest
+    needs: [make-builder, run-tests, code-coverage]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -157,7 +160,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          file: /cicd/application/Dockerfile
+          file: ${{ github.workspace }}/cicd/application/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
