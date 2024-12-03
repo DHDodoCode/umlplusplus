@@ -18,9 +18,3 @@ RUN apk --no-cache add cmake clang clang-dev make gcc g++ libc-dev linux-headers
 # Compile the C++ application
 RUN cmake -B build
 RUN cmake --build build --parallel
-
-# Run ctest to perform all tests
-# RUN ctest -C Release --test-dir ./build
-
-# Run gcov to acquire code coverage 
-# RUN gcov /workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.o
