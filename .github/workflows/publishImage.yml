@@ -63,7 +63,7 @@ jobs:
       # Runs tests within docker container. This tests the code and not the container,
       # so it runs using the build image and not the final image.
       - name: Run tests
-        run: docker run -i -t buildimage ctest -C Release --test-dir ./build
+        run: docker run buildimage ctest -C Release --test-dir ./build
       
       # Acquires umllib files for code coverage in a later step. 
       # This is due to how GoogleTest populates the files for code coverage 
