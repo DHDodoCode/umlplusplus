@@ -72,7 +72,7 @@ jobs:
         uses: shrink/actions-docker-extract@v3
         with:
           image: buildimage:latest
-          path: /workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*
+          path: workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/.
           destination: objectfiles
       
       - name: Upload object file directory as artifact 
