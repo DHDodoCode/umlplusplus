@@ -90,12 +90,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: objectfiles
-          path: /objectfiles
+          path: /tmp/objectfiles
         
         # Acquire code coverage from the object files using gcov. 
         # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run: gcov /objectfiles/*.o
+        run: gcov /tmp/objectfiles/*.o
         
         # Attempts to push code coverage to Codecov page.
         # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
@@ -104,9 +104,9 @@ jobs:
         with:
           # List all important model files tested with gcov. Do not add spaces between commas.
           files: >-
-                   /objectfiles/UMLClass.cpp.gcov,/objectfiles/UMLRelationship.cpp.gcov,/objectfiles/UMLAttribute.cpp.gcov,
-                   /objectfiles/UMLField.cpp.gcov,/objectfiles/UMLMethod.cpp.gcov,/objectfiles/UMLParameter.cpp.gcov,
-                   /objectfiles/UMLData.cpp.gcov,/objectfiles/UMLDataHistory.cpp.gcov,/objectfiles/UMLFile.cpp.gcov
+                   /tmp/objectfiles/UMLClass.cpp.gcov,/tmp/objectfiles/UMLRelationship.cpp.gcov,/tmp/objectfiles/UMLAttribute.cpp.gcov,
+                   /tmp/objectfiles/UMLField.cpp.gcov,/tmp/objectfiles/UMLMethod.cpp.gcov,/tmp/objectfiles/UMLParameter.cpp.gcov,
+                   /tmp/objectfiles/UMLData.cpp.gcov,/tmp/objectfiles/UMLDataHistory.cpp.gcov,/tmp/objectfiles/UMLFile.cpp.gcov
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
