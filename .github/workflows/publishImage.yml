@@ -6,6 +6,7 @@ on:
     tags:
       - 'v*'
     branches:
+      - '*' # Temporary, to test workflow
       - 'main'
       - 'develop'
   pull_request:
