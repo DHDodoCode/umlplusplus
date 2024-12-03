@@ -66,7 +66,7 @@ jobs:
       # object files. This is needed as a container will not retain info when stopped.
       - name: Run tests, commit container to new image
         run: | 
-          docker run buildimage sh -c "ctest --test-dir ./build && gcov /workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.o && cat"
+          docker run buildimage sh -c "build/Tests && gcov /workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.o && cat"
           docker commit $(docker ps -aqf ancestor=buildimage) testimage
           docker stop $(docker ps -aqf ancestor=buildimage)
       
