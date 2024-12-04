@@ -74,17 +74,17 @@ jobs:
       # Uses the container made in the previous step to get the object
       # files that were modified the GoogleTest binary run.
       - name: Copy populated umllib to virtual workspace
-        run: docker cp $(docker create --name tc testimage):/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/ /tmp/objectfiles
+        run: docker cp $(docker create --name tc testimage):/workspaces /tmp/workspaces
       
-      # Upload the populated umllib as an artifact. 
+      # Upload the populated tested binary as an artifact. 
       # Docker runs do not update the image, they only create a container. 
       # Thus, to get the populated object files for gcov, we need them 
       # as an artifact to be mounted in the next job.
-      - name: Upload artifact
+      - name: Upload artifact of tested binary
         uses: actions/upload-artifact@v4
         with:
-          name: objectfiles
-          path: /tmp/objectfiles
+          name: workspace
+          path: /tmp/workspaces
       
   code-coverage:
     name: Acquire code coverage with gcov
@@ -97,11 +97,11 @@ jobs:
           name: buildimage
           path: /tmp
       
-      - name: Download artifact of object files
+      - name: Download artifact of tested binary
         uses: actions/download-artifact@v4
         with:
-          name: objectfiles
-          path: /tmp/objectfiles
+          name: workspace
+          path: /tmp/workspaces
 
       - name: Load builder image
         run: docker load --input /tmp/buildimage.tar
@@ -109,7 +109,7 @@ jobs:
       # Acquire code coverage from the object files using gcov. 
       # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run:  docker run -v /tmp/objectfiles buildimage gcov /tmp/objectfiles/*.o
+        run:  docker run -v /tmp/workspaces buildimage gcov /tmp/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.gcno
 
       # Attempts to push code coverage to Codecov page.
       # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
@@ -118,9 +118,9 @@ jobs:
         with:
           # List all important model files tested with gcov. Do not add spaces between commas.
           files: >-
-                   /tmp/objectfiles/UMLClass.cpp.gcov,/tmp/objectfiles/UMLRelationship.cpp.gcov,/tmp/objectfiles/UMLAttribute.cpp.gcov,
-                   /tmp/objectfiles/UMLField.cpp.gcov,/tmp/objectfiles/UMLMethod.cpp.gcov,/tmp/objectfiles/UMLParameter.cpp.gcov,
-                   /tmp/objectfiles/UMLData.cpp.gcov,/tmp/objectfiles/UMLDataHistory.cpp.gcov,/tmp/objectfiles/UMLFile.cpp.gcov
+                   /tmp/workspaces/UMLClass.cpp.gcov,/tmp/workspaces/UMLRelationship.cpp.gcov,/tmp/workspaces/UMLAttribute.cpp.gcov,
+                   /tmp/workspaces/UMLField.cpp.gcov,/tmp/workspaces/UMLMethod.cpp.gcov,/tmp/workspaces/UMLParameter.cpp.gcov,
+                   /tmp/workspaces/UMLData.cpp.gcov,/tmp/workspaces/UMLDataHistory.cpp.gcov,/tmp/workspaces/UMLFile.cpp.gcov
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
