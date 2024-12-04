@@ -64,17 +64,14 @@ jobs:
       # so it runs using the build image and not the final image.
       # Keeps the container running so a new image can be made with the populated
       # object files. This is needed as a container will not retain info when stopped.
-      - name: Run tests, commit container to new image
-        run: | 
-          docker run buildimage sh -c "ctest --test-dir ./build && cat"
-          docker commit $(docker ps -aqf ancestor=buildimage) testimage
-          docker stop $(docker ps -aqf ancestor=buildimage)
+      - name: Run tests
+        run: docker run buildimage ctest --test-dir ./build
       
       # Acquires umllib files for code coverage in a later step. 
       # Uses the container made in the previous step to get the object
       # files that were modified the GoogleTest binary run.
-      - name: Copy populated umllib to virtual workspace
-        run: docker cp $(docker create --name tc testimage):/workspaces /tmp/workspaces
+      - name: Copy tested binary to virtual workspace
+        run: docker cp $(docker ps -aqf "ancestor=buildimage"):/workspaces /tmp/workspaces
       
       # Upload the populated tested binary as an artifact. 
       # Docker runs do not update the image, they only create a container. 
