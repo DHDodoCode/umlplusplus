@@ -6,7 +6,6 @@ on:
     tags:
       - 'v*'
     branches:
-      - '*' # Temporary, to test workflow
       - 'main'
       - 'develop'
   pull_request:
@@ -72,7 +71,7 @@ jobs:
       # Docker runs do not update the image, they only create a container. 
       # Thus, to get the populated object files for gcov, we need them 
       # as an artifact to be mounted in the next job. 
-      - name: Copy tested binary to virtual workspace
+      - name: Copy tested umllib files to virtual workspace
         run: docker cp $(docker ps -aqf "ancestor=buildimage"):/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib /tmp/umllib
       
       # Upload the populated tested gcda/gcno files as an artifact. 
