@@ -33,7 +33,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Make builder container with builder Dockerfile 
+      # Makes a tar of the builder image to be uploaded as an artifact for
+      # future jobs to utilize for testing, getting code coverage, and building
+      # the final image.
+      - name: Make builder image with builder Dockerfile 
         uses: docker/build-push-action@v6
         with:
           file: ${{ github.workspace }}/cicd/builder/Dockerfile
@@ -61,27 +64,23 @@ jobs:
         run: docker load --input /tmp/buildimage.tar
       
       # Runs tests within docker container. This tests the code and not the container,
-      # so it runs using the build image and not the final image.
-      # Keeps the container running so a new image can be made with the populated
-      # object files. This is needed as a container will not retain info when stopped.
+      # so it runs using the builder image and not the final image.
       - name: Run tests
         run: docker run buildimage ctest --test-dir ./build
       
-      # Acquires umllib files for code coverage in a later step. 
-      # Uses the container made in the previous step to get the object
-      # files that were modified the GoogleTest binary run.
-      - name: Copy tested binary to virtual workspace
-        run: docker cp $(docker ps -aqf "ancestor=buildimage"):/workspaces /tmp/workspaces
-      
-      # Upload the populated tested binary as an artifact. 
+      # Acquires umllib files for code coverage in the subsequent job.
       # Docker runs do not update the image, they only create a container. 
       # Thus, to get the populated object files for gcov, we need them 
-      # as an artifact to be mounted in the next job.
+      # as an artifact to be mounted in the next job. 
+      - name: Copy tested binary to virtual workspace
+        run: docker cp $(docker ps -aqf "ancestor=buildimage"):/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib /tmp/umllib
+      
+      # Upload the populated tested gcda/gcno files as an artifact. 
       - name: Upload artifact of tested binary
         uses: actions/upload-artifact@v4
         with:
-          name: workspace
-          path: /tmp/workspaces
+          name: umllib
+          path: /tmp/umllib
       
   code-coverage:
     name: Acquire code coverage with gcov
@@ -97,8 +96,8 @@ jobs:
       - name: Download artifact of tested binary
         uses: actions/download-artifact@v4
         with:
-          name: workspace
-          path: /tmp/workspaces
+          name: umllib
+          path: /tmp/umllib
 
       - name: Load builder image
         run: docker load --input /tmp/buildimage.tar
@@ -106,7 +105,7 @@ jobs:
       # Acquire code coverage from the object files using gcov. 
       # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run: docker run -v /tmp/workspaces:/tmp/workspaces:rw -w /tmp/workspaces buildimage gcov /tmp/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.gcno
+        run: docker run -v /tmp/umllib:/tmp/umllib:rw -w /tmp/umllib buildimage gcov /tmp/umllib/*.gcno
 
       # Attempts to push code coverage to Codecov page.
       # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/
@@ -115,9 +114,9 @@ jobs:
         with:
           # List all important model files tested with gcov. Do not add spaces between commas.
           files: >-
-                   /tmp/workspaces/UMLClass.cpp.gcov,/tmp/workspaces/UMLRelationship.cpp.gcov,/tmp/workspaces/UMLAttribute.cpp.gcov,
-                   /tmp/workspaces/UMLField.cpp.gcov,/tmp/workspaces/UMLMethod.cpp.gcov,/tmp/workspaces/UMLParameter.cpp.gcov,
-                   /tmp/workspaces/UMLData.cpp.gcov,/tmp/workspaces/UMLDataHistory.cpp.gcov,/tmp/workspaces/UMLFile.cpp.gcov
+                   /tmp/umllib/UMLClass.cpp.gcov,/tmp/umllib/UMLRelationship.cpp.gcov,/tmp/umllib/UMLAttribute.cpp.gcov,
+                   /tmp/umllib/UMLField.cpp.gcov,/tmp/umllib/UMLMethod.cpp.gcov,/tmp/umllib/UMLParameter.cpp.gcov,
+                   /tmp/umllib/UMLData.cpp.gcov,/tmp/umllib/UMLDataHistory.cpp.gcov,/tmp/umllib/UMLFile.cpp.gcov
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
@@ -134,7 +133,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
+      # This changes the driver to docker instead of docker-container so a local image
+      # can be used in a FROM statement for the application dockerfile.
       - name: Set up Docker Build
         uses: docker/setup-buildx-action@v3
         with:
@@ -182,7 +183,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
+      # This step generates an artifact attestation for the image, which is an 
+      # unforgeable statement about where and how it was built. It increases 
+      # supply chain security for people who consume the image. For more 
+      # information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         with:
