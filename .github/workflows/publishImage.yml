@@ -106,7 +106,7 @@ jobs:
       # Acquire code coverage from the object files using gcov. 
       # This generates .gcov files that are uploaded to the repo's Codecov page. 
       - name: Run code coverage 
-        run: docker run -v /tmp/workspaces:/tmp/workspaces:rw -w /tmp/workspaces buildimage gcov /tmp/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.gcno && ls
+        run: docker run -v /tmp/workspaces:/tmp/workspaces:rw -w /tmp/workspaces buildimage gcov /tmp/workspaces/umlplusplus/build/CMakeFiles/umllib.dir/umllib/*.gcno
 
       # Attempts to push code coverage to Codecov page.
       # Codecov page: https://app.codecov.io/gh/DHDodoCode/umlplusplus/

@@ -4,7 +4,7 @@
 # -----------------------------------------------
 
 # Stage 1: Use an Alpine image to build the code
-FROM buildimage AS builder
+FROM buildimage:latest AS builder
 
 # -----------------------------------------------
 
