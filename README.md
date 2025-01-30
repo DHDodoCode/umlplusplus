@@ -13,11 +13,41 @@ UML++ is a C++ & Javascript editor and generator of UML class diagrams.
 
 ## Dependencies
 
+### Docker Image
+- Docker (4.34.2+)
+### Manual Build
 - A C++ compiler
 - cmake (3.18.1+)
 - git (2.28.0+)
 
-## Build Instructions
+## Docker Image Instructions
+
+1. With Docker installed, install the latest version of the Docker image.
+```
+docker pull ghcr.io/dhdodocode/umlplusplus:develop
+```
+2. For CLI, use "--cli" argument. The interface will open in your command line. 
+For help, type 'help' in the command line or see USER_GUIDE.md.
+```
+docker run -i -t ghcr.io/dhdodocode/umlplusplus:develop ./project --cli
+```
+3. For GUI, provide no argument. Open port 60555 and enter interface in your browser through localhost:60555. When running, press "help" to enter a webpage that provides a user guide for using the GUI interface. Further information about the GUI can be found in USER_GUIDE.md.
+```
+docker run -i -t ghcr.io/dhdodocode/umlplusplus:develop ./project
+```
+
+**WARNING:** To both retrieve saved diagrams and load previously made diagrams in the CLI, you will need to run `docker container cp`.
+
+To save a file from your PC, you must have the container ID of the container previously used to run and save your UML diagram.
+```
+docker cp container_id:/diagram.json diagram.json
+```
+To load a file into the container, you must have the container ID of a container using the previously mentioned Docker image.
+```
+docker cp diagram.json container_id:/diagram.json
+```
+
+## Manual Build Instructions
 
 1. Clone this repository locally.
 ```
